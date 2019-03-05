@@ -68,8 +68,7 @@ public class CalculatorGui {
         pl.setLayout(gl);
         
         /* Gui shit. */
-        String[] operatorsArr = {"*","/","+",".", "-","(",")"};
-        ArrayList<String> operators = new ArrayList<>(Arrays.asList(operatorsArr));
+        ArrayList<String> operators = new ArrayList<>(Arrays.asList("*","/","+",".", "-","(",")"));
         int[] numbers=new int[10];
         for(int i = 1; i < 10; i++) numbers[i-1] = i; numbers[9] = 0;
         
@@ -90,18 +89,13 @@ public class CalculatorGui {
         for(int num : numbers) {
         	JButton b = new JButton(String.valueOf(num));
         	b.setName(String.valueOf(num));
-        	buttons.add(new JButton(String.valueOf(num)));
+        	buttons.add(b);
         }
         for(String op : operators) {
         	JButton b = new JButton(op);
         	b.setName(op);
-
-        	System.out.println("buttonName: " + b.getName());
-        	buttons.add(new JButton(op));
-
+        	buttons.add(b);
         }
-        JButton but = new JButton(); but.setName("dgd");
-    	System.out.println("newbutton name: " + but.getName());
 
         
         for(JButton button : buttons) {
@@ -114,7 +108,8 @@ public class CalculatorGui {
     			}
         	});
         }
-        /* setting the rest operators */ 
+        
+        // setting the rest operators 
         JButton assignButton = new JButton("=");
         assignButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -141,7 +136,6 @@ public class CalculatorGui {
         });
         pl.add(eraseButton);
     	
-    	System.out.println("newbutton name: " + but.getName());
 
     	
     	/* need to organize the buttons + color the assign operator and/or the other operators */
@@ -151,7 +145,7 @@ public class CalculatorGui {
 		frame.setContentPane(windowContent);
 		//set the size of the window to be big enough to accomodate all controls.
 		frame.pack();
-		//Finnaly, display the window
+		//Finally, display the window
 		frame.setVisible(true);  frame.setVisible(true);
 	
 		

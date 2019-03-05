@@ -94,7 +94,7 @@ public class ArithmeticApp {
                 }
             }
         }
-        if(indexStartNumber>0)
+        if(indexStartNumber>=0)
             valStrings.add(arithmeticExpression.substring(indexStartNumber));
         // handle operations * and /, because they have priority
         handleOperations(valStrings,opsList,new ArrayList<>(Arrays.asList('*','/')));
