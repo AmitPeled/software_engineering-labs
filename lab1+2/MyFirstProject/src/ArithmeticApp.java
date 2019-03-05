@@ -50,110 +50,98 @@ public class ArithmeticApp {
 	}
 	*/
 	
+	//calculate mathematical expression
 	static String CalcExpression(String arithmeticExp){ /* need to add a validity check to the expression*/ 
+
 		Stack<Integer> openBracelets=new Stack<>();
-		for(int i = 0; i < arithmeticExp.length();) {
-			if(arithmeticExp.charAt(i) == '(') {
-				System.out.println("before- " +arithmeticExp);
-				System.out.println("'('. i = " + i);
-				arithmeticExp = arithmeticExp.replace("(","");
-				System.out.println("after- " +arithmeticExp);
-
+		for(int i = 0; i < arithmeticExp.length();i++) {
+			if(arithmeticExp.charAt(i) == '(') 
 				openBracelets.push(i);
-			}
-			else if(arithmeticExp.charAt(i) == ')') {
-				System.out.println("')'. i = " + i);
-				System.out.println("before- " +arithmeticExp);
-
-				arithmeticExp = arithmeticExp.replace(")","");
-				System.out.println("after1- " +arithmeticExp);
+			else if(arithmeticExp.charAt(i) == ')') 
+			{
 				int correspondOpenIndex = openBracelets.pop();
-				String internalExpression = arithmeticExp.substring(correspondOpenIndex,i);
-				System.out.println("expression sent: " + internalExpression);
+				String internalExpression = arithmeticExp.substring(correspondOpenIndex+1,i);
+				//System.out.println("expression sent: " + internalExpression);
 				String res = ExecuteSimpleExpression(internalExpression);
-				arithmeticExp = arithmeticExp.replace(internalExpression, res);
-				System.out.println("returned result=: " + res
-				 +" current expression:" + arithmeticExp);
-
-				i = correspondOpenIndex; // all the sub expression is calculated and swapped with the corresponding result.
+				arithmeticExp = arithmeticExp.substring(0,correspondOpenIndex)+res+arithmeticExp.substring(i+1);
+				//System.out.println("new exp: "+arithmeticExp );
+				i = correspondOpenIndex-1; // all the sub expression is calculated and swapped with the corresponding result.
 			}
-			else i++;
 		}
 		return ExecuteSimpleExpression(arithmeticExp);
 	}
 		
-	
-	static String ExecuteSimpleExpression(String arithmeticExpression){// there is a simple problem now that and expression like 5*-1 can occur, therefore requires a little ugly handling.
-		/* Binary subtraction: operand1[-]operand2. unary: [-]operand1 
-		 one solution is that we split first by (only) the binary '-' operators, and then by the rest as usual.  
-		 */
-		ArrayList<String> splitByBinarySubtract = new ArrayList<String>();
-		int j = 0;
-		for(int i = 0; i < arithmeticExpression.length(); i++) {
-			if(arithmeticExpression.charAt(i) == '-' && // checking if subtraction is'nt unary
-					i!=0 && arithmeticExpression.charAt(i-1)<='9'&& arithmeticExpression.charAt(i-1)>='0') {
-				splitByBinarySubtract.add(arithmeticExpression.substring(j, i));
-				j = i+1;
-			}		
-		}
-		splitByBinarySubtract.add(arithmeticExpression.substring(j, arithmeticExpression.length())); // inserting the last expression
-		ArrayList<String> valStrings=new ArrayList<String>();
-		for(String subExp: splitByBinarySubtract) {  // spliting every sub expression by the rest of the operators:
-			valStrings.addAll(Arrays.asList(subExp.split("\\*|\\+|\\/")));
-		}
-		ArrayList<Character> opsList = new ArrayList<Character>(); List<Character> ops;
-		Character[] operations = {'*','/','-','+'}; ops = Arrays.asList(operations);
-		char[] expressionChars = arithmeticExpression.toCharArray();
-		char prev_c = 0;
-		for(char c : expressionChars) {
-			if(ops.contains(c)&& (prev_c<='9'&&prev_c>='0')) opsList.add(c); // before legal binary operation has to be a number  
-			prev_c = c;
-		}
-		for(int i = 0; i < opsList.size(); i++) {
-			if(opsList.get(i)=='*' || opsList.get(i)=='/') {
-				String res = DoOperation(valStrings.get(i),valStrings.get(i+1), opsList.get(i));
-				adjust(valStrings,opsList,res,i); // replacing operand1[operation]operand2 expression with corresponding
-							// result --> replacing valStrings[i,i+1] to res & removing operation from the list
-				i--;
-			}
-		}
-		for(int i = 0; i < opsList.size(); i++) {
-			if(opsList.get(i)=='+' || opsList.get(i)=='-') {
-				
-				String res = DoOperation(valStrings.get(i),valStrings.get(i+1), opsList.get(i));
-				adjust(valStrings,opsList,res,i);
-				i--;
-			}
-		}
-		arithmeticExpression = valStrings.get(0);
-		return arithmeticExpression;
+	//calculate expression without (,)
+	static String ExecuteSimpleExpression(String arithmeticExpression){
+		//separate the expression to values and operators
+		ArrayList<String> valStrings=new ArrayList<>();
+        ArrayList<Character> opsList=new ArrayList<>();
+        int indexStartNumber=-1;
+        for(int i=0;i<arithmeticExpression.length();i++)
+        {
+            char c=arithmeticExpression.charAt(i);
+            if((Character.isDigit(c) || c=='.')  && indexStartNumber<0)//start new number
+                indexStartNumber=i;
+            else if(!(Character.isDigit(c) || c=='.'))//if its an operator
+            {
+                if(indexStartNumber<0)//if we didn't start a number yet it must be - for negative number
+                    indexStartNumber=i;
+                else//we finished a  number and on a binary operator
+                {
+                    valStrings.add(arithmeticExpression.substring(indexStartNumber,i));
+                    opsList.add(c);
+                    indexStartNumber=-1;
+                }
+            }
+        }
+        if(indexStartNumber>0)
+            valStrings.add(arithmeticExpression.substring(indexStartNumber));
+        // handle operations * and /, because they have priority
+        handleOperations(valStrings,opsList,new ArrayList<>(Arrays.asList('*','/')));
+        // handle operations + and -
+        handleOperations(valStrings,opsList,new ArrayList<>(Arrays.asList('+','-')));
+        arithmeticExpression = valStrings.get(0);
+        return arithmeticExpression;
 	}
-	static String DoOperation(String oper1Str, String oper2Str, char op) {//returning the result of the operation
-		double oper1 = new Double(oper1Str.trim()), oper2 = new Double(oper2Str.trim());
-		double res = 0;
-		switch(op) {
-			case '*':
-				res = oper1*oper2;
-				break;
-			case '/':
-				res = oper1/oper2;
-				break;
-			case '+':
-				res = oper1+oper2;
-				break;
-			case '-':
-				res = oper1-oper2;
-				break;
-			default: System.out.println("Error. unrecognized operation");
-		}
-		return ""+res;
-	}
-	public static void adjust(ArrayList<String> valStrings, List<Character> ops, String res, int i) {
-		valStrings.set(i, res);
-		ops.remove(i);
-		valStrings.remove(i+1);
-	}
-
+	//calculate the result of operation op on the 2 values
+    static String DoOperation(String oper1Str, String oper2Str, char op) {//returning the result of the operation
+        double oper1 = new Double(oper1Str.trim()), oper2 = new Double(oper2Str.trim());
+        double res = 0;
+        switch(op) {
+            case '*':
+                res = oper1*oper2;
+                break;
+            case '/':
+                res = oper1/oper2;
+                break;
+            case '+':
+                res = oper1+oper2;
+                break;
+            case '-':
+                res = oper1-oper2;
+                break;
+            default: System.out.println("Error. unrecognized operation");
+        }
+        return ""+res;
+    }
+    //adjust the valStrings array list to replace the values in i,i+1 with the
+    public static void adjust(ArrayList<String> valStrings, List<Character> ops, String res, int i) {
+        valStrings.set(i, res);
+        ops.remove(i);
+        valStrings.remove(i+1);
+    }
+    //calculate the operators in opsToHandle that in the expression
+    public static void handleOperations(ArrayList<String> valStrings, ArrayList<Character> ops,ArrayList<Character> opsToHandle)
+    {
+        for(int i = 0; i < ops.size(); i++) {
+            if(opsToHandle.contains(ops.get(i))) {
+                String res = DoOperation(valStrings.get(i),valStrings.get(i+1), ops.get(i));
+                adjust(valStrings,ops,res,i); // replacing operand1[operation]operand2 expression with corresponding
+                // result --> replacing valStrings[i,i+1] to res & removing operation from the list
+                i--;
+            }
+        }
+    }
 	public static void main(String[] args) {
 		System.out.println("Please enter expression: \n");
 		
