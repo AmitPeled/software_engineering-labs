@@ -12,43 +12,6 @@ import java.util.Comparator;
 import static java.util.Comparator.comparing;
 
 public class ArithmeticApp {
-	static public class BraceletPair {
-	   public Integer openIndex;
-	   public Integer closeIndex;
-	   public BraceletPair(){this.openIndex = 0; this.closeIndex=0;}
-	   public BraceletPair(int openIndex, int closeIndex){
-		   this.openIndex = openIndex;
-		   this.closeIndex=closeIndex;
-	   }
-	}
-	/* try1:
-	 static String CalcExpression(List<Character> opsList,List<String> valStrings){
-		int opsLen = opsList.size(), valsLen = valStrings.size();
-		String oper1,oper2;
-		for(int i = 0; i < opsLen; i++) {
-			if(valStrings.get(i).equals("(")) CalcExpression(opsList, valStrings.subList(i+1,valsLen-1));
-			if(valStrings.get(i).equals(")")) break;
-			if(opsList.get(i)=='*' || opsList.get(i)=='/') {
-				if(valStrings.get(i).equals("(")) CalcExpression(opsList.subList(i+1,opsLen-1), valStrings.subList(i+1,valsLen-1));
-				if(valStrings.get(i).equals(")")) break;
-				String res = DoOperation(valStrings.get(i),valStrings.get(i+1), opsList.get(i));
-				adjust(valStrings,opsList,res,i); // replacing operand1[operation]operand2 expression with corresponding
-							// result --> replacing valStrings[i,i+1] to res & removing operation from the list
-				i--;
-			}
-		}
-		for(int i = 0; i < opsLen; i++) {
-			if(opsList.get(i)=='+' || opsList.get(i)=='-') {
-				if(valStrings.get(i).equals("(")) CalcExpression(opsList.subList(i+1,opsLen-1), valStrings.subList(i+1,valsLen-1));
-				if(valStrings.get(i).equals(")")) break;
-				String res = DoOperation(valStrings.get(i),valStrings.get(i+1), opsList.get(i));
-				adjust(valStrings,opsList,res,i);
-				i--;
-			}
-		}
-		return  valStrings.get(0);
-	}
-	*/
 	
 	//calculate mathematical expression
 	static String CalcExpression(String arithmeticExp){ /* need to add a validity check to the expression*/ 
@@ -150,7 +113,7 @@ public class ArithmeticApp {
 		
 		// firstly calculating the most priority operations (multiplication&division) by order, later on the rest.
 		
-		
-		System.out.println("The value of expression "+ arithmeticExpression + " is: = "+CalcExpression(arithmeticExpression));
+		double result = new Double(CalcExpression(arithmeticExpression));
+		System.out.println("The value of expression "+ arithmeticExpression + " is: = "+String.format( "%.2f",result));
 	}
 }
