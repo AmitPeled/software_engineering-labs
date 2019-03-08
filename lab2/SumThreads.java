@@ -1,31 +1,36 @@
 import java.util.concurrent.TimeUnit;
 
 public class SumThreads implements Runnable {
-	static long[] sum = new long[10];
+	static int NUM_THREADS=10;
+	static long[] sum = new long[NUM_THREADS];
 	long beginNum = 0, offset = 0;
+	int index = 0;
 	
-	public SumThreads(long beginNum, long offset) { this.beginNum = beginNum; this.offset = offset;}
+	public SumThreads(long beginNum, long offset,int index) { this.beginNum = beginNum; this.offset = offset;this.index=index;}
 	
 	public void run() {
-		int threadNum = Integer.parseInt(Thread.currentThread().getName());
-		sum[threadNum] = 0;
-		while(offset-- > 0) 
-			sum[threadNum] += (beginNum+offset);
+		long temp=beginNum+offset;
+		while(temp-- > beginNum)
+			sum[index] += temp;
 	}
 	
 	public static void main(String[] args) {
 		long startTime = System.nanoTime();
-		
-		long offset = ((long) 1<<32) / 10, beginNum = 0;
-		Thread[] threads = new Thread[10]; // create an array of threads
-		for(int i = 0; i < 10; i++) {
-			String threadName = Integer.toString(i);
-			threads[i]=new Thread(new SumThreads(beginNum,offset),threadName);
+		//set the threads
+		long offset = ((long) 1<<32) / sum.length, beginNum = 0;
+		Thread[] threads = new Thread[sum.length]; // create an array of threads
+		for(int i = 0; i < sum.length-1; i++) {
+			sum[i]=0;
+			threads[i]=new Thread(new SumThreads(beginNum,offset,i));
 			beginNum +=offset;
 		}
+		sum[sum.length-1]=0;
+		threads[sum.length-1]=new Thread(new SumThreads(beginNum,((long) 1<<32)-beginNum,sum.length-1));
+		//start the threads
 		for (Thread thread : threads) {
 			 thread.start(); // start the threads
 		}
+		//wait for the threads to finish
 		for (Thread thread : threads) {
 			 try{
 				 thread.join(); // finish the threads
@@ -34,10 +39,10 @@ public class SumThreads implements Runnable {
 				 e.printStackTrace();
 				 } 
 			}
-		
+		//sum the results
 		long totalSum = 0;
-		for(int i = 0; i < 10; i++) totalSum+=sum[i];
-		
+		for(long l : sum) totalSum+=l;
+		//print the time
 		System.out.println("The sum is "+totalSum);
 		long difference = System.nanoTime() - startTime;
 		System.out.println("Total execution time: " +
