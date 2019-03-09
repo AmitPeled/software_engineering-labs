@@ -2,82 +2,138 @@ import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Scanner;
+import java.math.BigInteger;
 public class FindPrimeNumbers implements Runnable {
+	static Object lock=new Object();
+	static Integer producersAlive=0;
 	static ArrayList<Long> PrimeArray = new ArrayList<>();
-	long beginNum = 0, offset = 0;
-	
-	public FindPrimeNumbers(long beginNum, long offset) { this.beginNum = beginNum; this.offset = offset;}
+	long beginNum = 0, offset = 0, L=0;
+	boolean isProducer;
+
+	public FindPrimeNumbers(long beginNum, long offset) { this.beginNum = beginNum; this.offset = offset;this.isProducer=true;}
+	public FindPrimeNumbers(long L) {this.isProducer=false;this.L=L;}
 	
 	public void run() {
-		ArrayList<Long> primes = getPrimes(beginNum,beginNum+offset);
-		if(!primes.isEmpty())
-			PrimeArray.addAll(primes);
-		//System.out.println("Thread"+ Thread.currentThread().getName()+" received the segment: ["+
-		//beginNum+ "," + (beginNum+offset)+"] " + "and added: " +getPrimes(beginNum,beginNum+offset));
+		if(isProducer)
+			producer();
+		else
+			consumer();
+	}
+
+	public void producer()
+	{
+		long endNum=beginNum+offset;
+		for(long num = beginNum; num < endNum; num++) {
+			if(isPrime(num))
+				synchronized (lock){
+					PrimeArray.add(num);
+					lock.notifyAll(); //release the consumer if it's waiting for primes to print
+				}
+		}
+		synchronized(lock) {
+			producersAlive--;
+			lock.notifyAll();
+		}
+	}
+	public void consumer()
+	{
+		System.out.print("Primes before sorting:");
+		int index=0;
+		synchronized (lock)
+		{
+			while(producersAlive>0)
+			{
+				//wait for next prime
+				while(index>=PrimeArray.size() && producersAlive>0)
+				{
+					try {
+						lock.wait();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				if(index<PrimeArray.size())
+				{
+					//print it
+					if(index%L==0)
+						System.out.print("\n");
+					System.out.print(" "+PrimeArray.get(index));
+					index++;
+				}
+			}
+		}
+		//print sorted
+		if(!PrimeArray.isEmpty())
+			Collections.sort(PrimeArray);
+		System.out.print("\nPrime array after sorting: ");
+		for(index=0;index<PrimeArray.size();index++)
+		{
+			if(index%L==0)
+				System.out.print("\n");
+			System.out.print(" "+PrimeArray.get(index));
+		}
+		System.out.print("\n");
 	}
 	
 	public static void main(String[] args) {
 		Scanner in = new Scanner(System.in);
-		long max = Long.parseLong(in.next());
-		long L = Long.parseLong(in.next());
-		int N = Integer.parseInt(in.next());
-		
-		
-		System.out.println("try1: " + getPrimes(0,max).toString());
+		System.out.println("Enter (3) parameters:");
+		long max = in.nextLong();
+		long L = in.nextLong();
+		int N = in.nextInt();
 		long startTime = System.nanoTime();
-		
-		long offset = max / (N-2), beginNum = 0;
-		Thread[] threads = new Thread[N-1]; // create an array of threads
-		for(int i = 0; i < N-1; i++) {
-			String threadName = Integer.toString(i);
-			if(i == N-2) offset = max-beginNum; // for those that is not included because of the complete integer division
-			// note: there are at most N-3 of those (this num is exactly max%(N-2))
-			
-			threads[i]=new Thread(new FindPrimeNumbers(beginNum,offset),threadName);
+
+		//create threads
+		long offset = max / (N-1), beginNum = 0;
+		Thread[] producers = new Thread[N-1];
+		int i;
+		for(i = 0; i < N-2; i++) {
+			producers[i]=new Thread(new FindPrimeNumbers(beginNum,offset),"producer"+i);
 			beginNum +=offset;
 		}
-		int i = 0;
-		for (Thread thread : threads) {
-			//System.out.println("started thread "+ i++);
-			thread.start(); // start the threads
+		producers[i]=new Thread(new FindPrimeNumbers(beginNum,max-beginNum),"producer"+i);
+		Thread consumer=new Thread(new FindPrimeNumbers(L),"consumer");
+
+		//start the threads
+		synchronized (producersAlive) {
+			producersAlive=N-1;
 		}
-		for (Thread thread : threads) {
+		for (Thread thread : producers) {
+			thread.start();
+		}
+		consumer.start();
+
+		// wait for all of them to finish
+		for (Thread thread : producers) {
 			 try{
-				 thread.join(); // finish the threads
+				 thread.join();
 			 }
 			 catch(InterruptedException e) {
 				 e.printStackTrace();
 			 } 
-			}
-		
-		//ArrayList<Long> primes = new ArrayList<>();
-		//for(int i = 0; i < N-1; i++) primes.addAll(PrimeArray.get(i));
-		
-		System.out.println("prime array before sorting: "+PrimeArray.toString());
-		printTime(startTime);
-		
-		if(!PrimeArray.isEmpty())
-			Collections.sort(PrimeArray);
-		System.out.println("prime array after sorting: "+PrimeArray.toString());
-		printTime(startTime);
+		}
+		try{
+			consumer.join();
+		}
+		catch(InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		//print the time it took
+		printTimeFrom(startTime);
 
 	}
 	public static boolean isPrime(long num){ // basic prime function
-		if(num < 2) return false;
+		/*if(num < 2) return false;
 		for(int i = 2; i*i <= num; i++) {
 			if((int)num%i == 0) return false;
 		}
-		return true;
+		return true;*/
+		return new  BigInteger(Objects.toString(num,"4")).isProbablePrime(1);
 	}
-	public static synchronized ArrayList<Long> getPrimes(long startNum, long endNum) {
-		ArrayList<Long> primes = new ArrayList<>();
-		for(long num = startNum; num < endNum; num++) {
-			if(isPrime(num)) primes.add(num);
-		}
-		return primes;
-	}
-	public static void printTime(long startTime) {
+	public static void printTimeFrom(long startTime) {
 		long difference = System.nanoTime() - startTime;
 		System.out.println("Total execution time: " +
 		                String.format("%d min, %d sec\n",
