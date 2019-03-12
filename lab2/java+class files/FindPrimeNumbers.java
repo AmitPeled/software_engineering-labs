@@ -1,6 +1,5 @@
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Scanner;
@@ -29,12 +28,12 @@ public class FindPrimeNumbers implements Runnable {
 			if(isPrime(num))
 				synchronized (lock){
 					PrimeArray.add(num);
-					lock.notifyAll(); //release the consumer if it's waiting for primes to print
+					lock.notifyAll(); //releases the consumer if it's waiting for primes to print
 				}
 		}
 		synchronized(lock) {
 			producersAlive--;
-			lock.notifyAll();
+			lock.notifyAll(); //releases the consumer the check whether all the producers are finished
 		}
 	}
 	public void consumer()
@@ -49,7 +48,7 @@ public class FindPrimeNumbers implements Runnable {
 				while(index>=PrimeArray.size() && producersAlive>0)
 				{
 					try {
-						lock.wait();
+						lock.wait(); // waiting for prime to be loaded
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -68,7 +67,7 @@ public class FindPrimeNumbers implements Runnable {
 		if(!PrimeArray.isEmpty())
 			Collections.sort(PrimeArray);
 		System.out.print("\nPrime array after sorting: ");
-		for(index=0;index<PrimeArray.size();index++)
+		for(index=0; index<PrimeArray.size(); index++)
 		{
 			if(index%L==0)
 				System.out.print("\n");
@@ -78,6 +77,24 @@ public class FindPrimeNumbers implements Runnable {
 	}
 	
 	public static void main(String[] args) {
+
+		
+		/**  runnable jar creation **/
+		/** ------------------------------------------------------------ **/
+
+//		JUnitCore junit = new JUnitCore();
+//		  junit.addListener(new TextListener(System.out));
+//		  org.junit.runner.Result result = junit.run(FindPrimeNumbers.class); // Replace "SampleTest" with the name of your class
+//		  if (result.getFailureCount() > 0) {
+//		    System.out.println("Test failed.");
+//		    System.exit(1);
+//		  } else {
+//		    System.out.println("Test finished successfully.");
+//		    System.exit(0);
+//		  }
+
+		 /** ------------------------------------------------------------ **/
+		  
 		Scanner in = new Scanner(System.in);
 		System.out.println("Enter (3) parameters:");
 		long max = in.nextLong();
