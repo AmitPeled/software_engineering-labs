@@ -57,7 +57,7 @@ public class Main {
 		try {
 			Class.forName(JDBC_DRIVER);
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			stmt = conn.createStatement();
+			stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
 		} catch (SQLException e) {
 			System.err.println("cannot connect to DB");
 			System.err.println(e.getMessage());
@@ -71,26 +71,35 @@ public class Main {
 			try {
 				/** exerecise 1+2 */
 				System.out.println("\nTask2: ");
-				rs = stmt.executeQuery("Select price FROM flights WHERE num = 387");
+				rs = stmt.executeQuery("Select * FROM flights WHERE num = 387");
 				rs.next();
 				int priceBefore = rs.getInt("price");
-				stmt.executeUpdate("UPDATE flights SET price = 1500 where num = 387");
-				System.out.println("changed price of flight 387 to 1500.");
-				rs = stmt.executeQuery("Select price FROM flights WHERE num = 387");
-				rs.next();
+				rs.updateInt("price", 1500);
+				rs.updateRow();
 				int priceAfter = rs.getInt("price");
 				rs.close();
 				System.out.println("price of flight 387 changed from " + priceBefore + " to " + priceAfter);
-
+			} catch (SQLException se) {
+				System.err.println("Cannot execute Task 1-2");
+				System.out.println("SQLException: " + se.getMessage());
+				System.exit(1);
+			}
+			try {
 				/** exerecise 3 */
 				System.out.println("\nTask3: ");
-				rs = stmt.executeQuery("Select price FROM flights WHERE distance > 1000");
+				rs = stmt.executeQuery("Select * FROM flights WHERE distance > 1000");
 				ArrayList<Integer> pricesBefore = new ArrayList<Integer>();
 				while (rs.next()) {
 					pricesBefore.add(rs.getInt("price"));
 				}
+				
+				rs.beforeFirst();
+				while(rs.next()) {
+					rs.updateInt("price",(int)(rs.getInt("price")+50));
+					rs.updateRow();
+				}
 				rs.close();
-				stmt.executeUpdate("UPDATE flights SET price = price + 50 where distance > 1000");
+				
 				rs = stmt.executeQuery("Select * FROM flights WHERE distance > 1000");
 				for (int pricebefore : pricesBefore) {
 					rs.next();
@@ -98,21 +107,30 @@ public class Main {
 							+ rs.getInt("distance") + " changed from " + pricebefore + " to " + rs.getInt("price"));
 				}
 				rs.close();
+			} catch (SQLException e) {
+				System.err.println("Cannot execute Task 3");
+				System.err.println(e.getMessage());
+				System.exit(1);
+			}
+			try {
 				/** exercise 4 */
 				System.out.println("\nTask4: ");
 				System.out.println("Working now with PreparedStatement");	
-				PreparedStatement pstmt = conn.prepareStatement("Select price FROM flights WHERE distance > ?");
+				PreparedStatement pstmt = conn.prepareStatement("Select * FROM flights WHERE distance > ?",ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_UPDATABLE);
 				pstmt.setInt(1, 1000);
-				pricesBefore.clear();
+				ArrayList<Integer> pricesBefore = new ArrayList<Integer>();
 				rs = pstmt.executeQuery();
 				while (rs.next()) {
 					pricesBefore.add(rs.getInt("price"));
 				}
+				
+				rs.beforeFirst();
+				while (rs.next()) {
+					rs.updateInt("price",(int)(rs.getInt("price")+50));
+					rs.updateRow();
+				}
 				rs.close();
-				pstmt = conn.prepareStatement("UPDATE flights set price = price + ? where distance > ?");
-				pstmt.setInt(1, 50); // inserts value 50 to the first '?' placeholder
-				pstmt.setInt(2, 1000); // insert value 1000 to the second '?' placeholder
-				pstmt.executeUpdate();
+				
 				pstmt = conn.prepareStatement("Select * FROM flights WHERE distance > ?");
 				pstmt.setInt(1, 1000);
 				rs = pstmt.executeQuery();
@@ -125,7 +143,7 @@ public class Main {
 				pstmt.close();
 
 			} catch (SQLException e) {
-				System.err.println("Cannot execute Task 1");
+				System.err.println("Cannot execute Task 4");
 				System.err.println(e.getMessage());
 				System.exit(1);
 			}
