@@ -185,6 +185,15 @@ public class ChatClient extends AbstractClient
     {
       clientUI.display("Current port: " + Integer.toString(getPort()));
     }
+    else if (message.equalsIgnoreCase("#send"))
+    {
+    	try {
+			sendToServer("Amit Peled 314778903 77.125.104.167,Ron Cohen 209792340 79.180.251.30");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
   }
   
   /**
